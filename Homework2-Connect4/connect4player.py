@@ -9,6 +9,13 @@ import connect4
 
 PLAYER_ONE_VALUE = 1
 PLAYER_TWO_VALUE = 2
+
+"""
+========================================================================
+|||                 TURN OFF ALPHA-BETA PRUNING HERE                 |||
+========================================================================
+(although I'm quite confident this one actually works!)
+"""
 PRUNING = True
 
 class ComputerPlayer:
@@ -26,7 +33,7 @@ class ComputerPlayer:
         comment here eventually when time to comment
         """
         if PRUNING:
-            move, eval = self.maxMove(rack, self.difficulty, float("-inf"), float("inf"))
+            move, eval = self.calculateAlphaBetaMove(rack, self.difficulty, True, float("-inf"), float("inf"))
         else:
             move, eval = self.calculateMove(rack, self.difficulty, True)
         return move
@@ -53,6 +60,7 @@ class ComputerPlayer:
                 if depth > 0:
                     # recusion time yippppeeee!!!!!
                     x, boardScore = self.calculateMove(hypotheticalBoard, depth-1, (not isMax))
+
                 else:
                     boardScore = ComputerPlayer.evaluation(self.id, hypotheticalBoard)
                 if (not isMax) ^ (boardScore >= evaluation): # the XOR toggles behaviour depending on whether we are doing a min or max move
@@ -60,67 +68,48 @@ class ComputerPlayer:
                     evaluation = boardScore
         return (move, evaluation)
     
-    def maxMove(self, rack, depth, alpha, beta):
-        move = -1
-        eval = float("-inf")
+    def calculateAlphaBetaMove(self, rack, depth, isMax, alpha, beta):
+        move = 1 # initialize move
+        # change initial conditions depending on max or min move
+        if (isMax):
+            playerID = self.id
+            evaluation = float("-inf")
+        else:
+            playerID = PLAYER_ONE_VALUE if self.id == PLAYER_TWO_VALUE else PLAYER_TWO_VALUE
+            evaluation = float("inf")
+
+        # if game is over, do not try to continue
         if (ComputerPlayer.isGameOver(rack)):
-            # do not try to continue a game which is over (slight pruning :D)
-            return (-1, ComputerPlayer.evaluation(self.id, rack))
+            return (1, ComputerPlayer.evaluation(self.id, rack))
+        
+        # loop through each possible move
         for i in range(7):
-            hypotheticalBoard = [list(column) for column in rack]
-            # make sure move is legal
-            if 0 in hypotheticalBoard[i]:
-                connect4.place_disc(hypotheticalBoard, self.id, i)
+            hypotheticalBoard = [list(column) for column in rack] # copy board so we can place into it
+            if 0 in hypotheticalBoard[i]: # make sure move is legal
+                connect4.place_disc(hypotheticalBoard, playerID, i) # place disc on new board
                 if depth > 0:
-
                     # recusion time yippppeeee!!!!!
-                    x, boardScore = self.minMove(hypotheticalBoard, depth-1, alpha, beta)
-
-                    if boardScore > alpha:
-                        alpha = boardScore
+                    x, boardScore = self.calculateAlphaBetaMove(hypotheticalBoard, depth-1, (not isMax), alpha, beta)
                     
-                    if boardScore > beta:
-                        return (i, boardScore)
-
-
-
+                    if isMax:
+                        if boardScore > alpha:
+                            alpha = boardScore
+                    
+                        if boardScore > beta:
+                            return (i, boardScore)
+                    else:
+                        if boardScore < alpha:
+                            return (i, boardScore)
+                    
+                        if boardScore > beta:
+                            boardScore = beta
+                
                 else:
                     boardScore = ComputerPlayer.evaluation(self.id, hypotheticalBoard)
-                if boardScore >= eval:
+                if (not isMax) ^ (boardScore >= evaluation): # the XOR toggles behaviour depending on whether we are doing a min or max move
                     move = i
-                    eval = boardScore
-        return (move, eval)
-
-    def minMove(self, rack, depth, alpha, beta):
-        minID = PLAYER_ONE_VALUE if self.id == PLAYER_TWO_VALUE else PLAYER_TWO_VALUE
-        move = -1
-        eval = float("inf")
-        if (ComputerPlayer.isGameOver(rack)):
-            # do not try to continue a game which is over (slight pruning :D)
-            return (-1, ComputerPlayer.evaluation(self.id, rack))
-        for i in range(7):
-            hypotheticalBoard = [list(column) for column in rack]
-            # make sure move is legal
-            if 0 in hypotheticalBoard[i]:
-                connect4.place_disc(hypotheticalBoard, minID, i)
-                if depth > 0:
-
-                    # recusion time yippppeeee!!!!!
-                    x, boardScore = self.maxMove(hypotheticalBoard, depth-1, alpha, beta)
-
-                    if boardScore < alpha:
-                        return (i, boardScore)
-                    
-                    if boardScore > beta:
-                        boardScore = beta
-
-                else:
-                    boardScore = ComputerPlayer.evaluation(self.id, hypotheticalBoard)
-                if boardScore <= eval:
-                    move = i
-                    eval = boardScore
-        return (move, eval)
-    
+                    evaluation = boardScore
+        return (move, evaluation)
     
     def isGameOver(rack):
         return (ComputerPlayer.evaluation(1, rack) == float("inf") or ComputerPlayer.evaluation(1,rack) == float("-inf"))
