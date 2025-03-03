@@ -9,6 +9,7 @@ import connect4
 
 PLAYER_ONE_VALUE = 1
 PLAYER_TWO_VALUE = 2
+PRUNING = True
 
 class ComputerPlayer:
     def __init__(self, id, difficulty_level):
@@ -24,7 +25,10 @@ class ComputerPlayer:
         """
         comment here eventually when time to comment
         """
-        move, eval = self.calculateMove(rack, self.difficulty, True)
+        if PRUNING:
+            move, eval = self.maxMove(rack, self.difficulty, float("-inf"))
+        else:
+            move, eval = self.calculateMove(rack, self.difficulty, True)
         return move
 
     def calculateMove(self, rack, depth, isMax):
@@ -55,6 +59,60 @@ class ComputerPlayer:
                     move = i
                     evaluation = boardScore
         return (move, evaluation)
+    
+    def maxMove(self, rack, depth, bestSoFar):
+        move = -1
+        eval = float("-inf")
+        if (ComputerPlayer.isGameOver(rack)):
+            # do not try to continue a game which is over (slight pruning :D)
+            return (-1, ComputerPlayer.evaluation(self.id, rack))
+        for i in range(7):
+            hypotheticalBoard = [list(column) for column in rack]
+            # make sure move is legal
+            if 0 in hypotheticalBoard[i]:
+                connect4.place_disc(hypotheticalBoard, self.id, i)
+                if depth > 0:
+
+                    # recusion time yippppeeee!!!!!
+                    x, boardScore = self.minMove(hypotheticalBoard, depth-1, bestSoFar)
+
+                    if boardScore > bestSoFar:
+                        bestSoFar = boardScore
+
+
+                else:
+                    boardScore = ComputerPlayer.evaluation(self.id, hypotheticalBoard)
+                if boardScore >= eval:
+                    move = i
+                    eval = boardScore
+        return (move, eval)
+
+    def minMove(self, rack, depth, bestSoFar):
+        minID = PLAYER_ONE_VALUE if self.id == PLAYER_TWO_VALUE else PLAYER_TWO_VALUE
+        move = -1
+        eval = float("inf")
+        if (ComputerPlayer.isGameOver(rack)):
+            # do not try to continue a game which is over (slight pruning :D)
+            return (-1, ComputerPlayer.evaluation(self.id, rack))
+        for i in range(7):
+            hypotheticalBoard = [list(column) for column in rack]
+            # make sure move is legal
+            if 0 in hypotheticalBoard[i]:
+                connect4.place_disc(hypotheticalBoard, minID, i)
+                if depth > 0:
+
+                    # recusion time yippppeeee!!!!!
+                    x, boardScore = self.maxMove(hypotheticalBoard, depth-1, bestSoFar)
+
+                    if bestSoFar > boardScore:
+                        return (i, boardScore)
+
+                else:
+                    boardScore = ComputerPlayer.evaluation(self.id, hypotheticalBoard)
+                if boardScore <= eval:
+                    move = i
+                    eval = boardScore
+        return (move, eval)
     
     
     def isGameOver(rack):
