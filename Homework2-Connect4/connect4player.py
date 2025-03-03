@@ -26,7 +26,7 @@ class ComputerPlayer:
         comment here eventually when time to comment
         """
         if PRUNING:
-            move, eval = self.maxMove(rack, self.difficulty, float("-inf"))
+            move, eval = self.maxMove(rack, self.difficulty, float("-inf"), float("inf"))
         else:
             move, eval = self.calculateMove(rack, self.difficulty, True)
         return move
@@ -60,7 +60,7 @@ class ComputerPlayer:
                     evaluation = boardScore
         return (move, evaluation)
     
-    def maxMove(self, rack, depth, bestSoFar):
+    def maxMove(self, rack, depth, alpha, beta):
         move = -1
         eval = float("-inf")
         if (ComputerPlayer.isGameOver(rack)):
@@ -74,10 +74,14 @@ class ComputerPlayer:
                 if depth > 0:
 
                     # recusion time yippppeeee!!!!!
-                    x, boardScore = self.minMove(hypotheticalBoard, depth-1, bestSoFar)
+                    x, boardScore = self.minMove(hypotheticalBoard, depth-1, alpha, beta)
 
-                    if boardScore > bestSoFar:
-                        bestSoFar = boardScore
+                    if boardScore > alpha:
+                        alpha = boardScore
+                    
+                    if boardScore > beta:
+                        return (i, boardScore)
+
 
 
                 else:
@@ -87,7 +91,7 @@ class ComputerPlayer:
                     eval = boardScore
         return (move, eval)
 
-    def minMove(self, rack, depth, bestSoFar):
+    def minMove(self, rack, depth, alpha, beta):
         minID = PLAYER_ONE_VALUE if self.id == PLAYER_TWO_VALUE else PLAYER_TWO_VALUE
         move = -1
         eval = float("inf")
@@ -102,10 +106,13 @@ class ComputerPlayer:
                 if depth > 0:
 
                     # recusion time yippppeeee!!!!!
-                    x, boardScore = self.maxMove(hypotheticalBoard, depth-1, bestSoFar)
+                    x, boardScore = self.maxMove(hypotheticalBoard, depth-1, alpha, beta)
 
-                    if bestSoFar > boardScore:
+                    if boardScore < alpha:
                         return (i, boardScore)
+                    
+                    if boardScore > beta:
+                        boardScore = beta
 
                 else:
                     boardScore = ComputerPlayer.evaluation(self.id, hypotheticalBoard)

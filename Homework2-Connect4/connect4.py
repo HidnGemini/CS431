@@ -27,6 +27,7 @@ __date__ = "September 2019"
 
 import sys
 import random
+import time
 from functools import partial
 
 ################################################################################
@@ -528,6 +529,7 @@ def find_win(rack, column = None):
 
 if __name__ == "__main__":
 
+    start = time.time()
     # look at the command line for what the user wants
     do_print_help, player_files, levels, colors, graphics_wanted = parse_command_line_args(sys.argv[1:])
     
@@ -550,4 +552,7 @@ if __name__ == "__main__":
     else:
         play_game_in_ascii(players[0], players[1])
         #print("Sorry--this game is not implemented yet in ASCII.", file=sys.stderr)
+    
+    end = time.time()
+    print(f"time taken: {end - start} seconds")
     
