@@ -1,12 +1,10 @@
 """
-This Connect Four player just picks a random spot to play. It's pretty dumb.
+This Connect Four player uses magic to choose a move. wowooOOWOOWOowooWOOWOooOWOo
 """
 __author__ = "Maddy Stephens"
 __license__ = "MIT"
 __date__ = "February 2025"
 
-import random
-import time
 import connect4
 
 PLAYER_ONE_VALUE = 1
@@ -15,72 +13,67 @@ PLAYER_TWO_VALUE = 2
 class ComputerPlayer:
     def __init__(self, id, difficulty_level):
         """
-        Constructor, takes a difficulty level (likely the # of plies to look
-        ahead), and a player ID that's either 1 or 2 that tells the player what
-        its number is.
+        Constructor, takes a difficulty level (which indicates the number of 
+        plies to look ahead by and a player ID that's  either 1 or 2 that 
+        tells the player what its number is.
         """
         self.id = id
         self.difficulty = difficulty_level
 
     def pick_move(self, rack):
         """
-        Pick the move to make. It will be passed a rack with the current board
-        layout, column-major. A 0 indicates no token is there, and 1 or 2
-        indicate discs from the two players. Column 0 is on the left, and row 0 
-        is on the bottom. It must return an int indicating in which column to 
-        drop a disc. The player current just pauses for half a second (for 
-        effect), and then chooses a random valid move.
+        comment here eventually when time to comment
         """
-        move, eval = self.maxMove(rack, self.difficulty, "")
+        move, eval = self.maxMove(rack, self.difficulty)
         return move
     
-    def maxMove(self, rack, depth, soFar):
+# TODO : maxMove and minMove are basically the same function. condense them into 1
+
+    def maxMove(self, rack, depth):
         move = -1
         eval = float("-inf")
         if (ComputerPlayer.isGameOver(rack)):
+            # do not try to continue a game which is over (slight pruning :D)
             return (-1, ComputerPlayer.evaluation(self.id, rack))
         for i in range(7):
             hypotheticalBoard = [list(column) for column in rack]
-            connect4.place_disc(hypotheticalBoard, self.id, i)
             # make sure move is legal
             if 0 in hypotheticalBoard[i]:
-                if depth == 3:
-                    print(f"[MAX] Trying {soFar}{i}")
+                connect4.place_disc(hypotheticalBoard, self.id, i)
                 if depth > 0:
+
                     # recusion time yippppeeee!!!!!
-                    x, boardScore = self.minMove(hypotheticalBoard, depth, soFar+str(i))
+                    x, boardScore = self.minMove(hypotheticalBoard, depth-1)
+
                 else:
                     boardScore = ComputerPlayer.evaluation(self.id, hypotheticalBoard)
                 if boardScore >= eval:
                     move = i
                     eval = boardScore
-        for i in range(self.difficulty-depth):
-            print("    ", end="")
-        print(f"[MAX] {soFar}{move} is the best move with score {eval}!")
         return (move, eval)
 
-    def minMove(self, rack, depth, soFar):
-        minID = PLAYER_ONE_VALUE if self.id == PLAYER_TWO_VALUE else  PLAYER_TWO_VALUE
+    def minMove(self, rack, depth):
+        minID = PLAYER_ONE_VALUE if self.id == PLAYER_TWO_VALUE else PLAYER_TWO_VALUE
         move = -1
         eval = float("inf")
         if (ComputerPlayer.isGameOver(rack)):
+            # do not try to continue a game which is over (slight pruning :D)
             return (-1, ComputerPlayer.evaluation(self.id, rack))
         for i in range(7):
             hypotheticalBoard = [list(column) for column in rack]
-            connect4.place_disc(hypotheticalBoard, minID, i)
             # make sure move is legal
             if 0 in hypotheticalBoard[i]:
-                #connect4.print_rack(hypotheticalBoard)
+                connect4.place_disc(hypotheticalBoard, minID, i)
+                if depth > 0:
 
-                # recusion time yippppeeee!!!!!
-                x, boardScore = self.maxMove(hypotheticalBoard, depth-1, soFar+str(i))
-                
+                    # recusion time yippppeeee!!!!!
+                    x, boardScore = self.maxMove(hypotheticalBoard, depth-1)
+
+                else:
+                    boardScore = ComputerPlayer.evaluation(self.id, hypotheticalBoard)
                 if boardScore <= eval:
                     move = i
                     eval = boardScore
-        for i in range(self.difficulty-depth+1):
-            print("    ", end="")
-        print(f"[MIN] {soFar}{move} is the best move with score {eval}!")
         return (move, eval)
     
     def isGameOver(rack):
@@ -157,21 +150,21 @@ class ComputerPlayer:
             print()
 
 if __name__ == "__main__":
-    rack = ((1, 1, 0, 0, 0, 0), 
-            (0, 0, 0, 0, 0, 0), 
-            (0, 0, 0, 0, 0, 0),
-            (2, 0, 0, 0, 0, 0), 
-            (0, 0, 0, 0, 0, 0), 
-            (2, 0, 0, 0, 0, 0), 
-            (0, 0, 0, 0, 0, 0))
+    # rack = ((1, 1, 0, 0, 0, 0), 
+    #         (0, 0, 0, 0, 0, 0), 
+    #         (0, 0, 0, 0, 0, 0),
+    #         (2, 0, 0, 0, 0, 0), 
+    #         (0, 0, 0, 0, 0, 0), 
+    #         (2, 0, 0, 0, 0, 0), 
+    #         (0, 0, 0, 0, 0, 0))
     #rack = ((42, -1, -2, -3, -4, -5), (-6, -7, -8, -9, 10, 11), (12, 13, 14, 15, 16, 17), (18, 19, 20, 21, 22, 23), (24, 25, 26, 27, 28, 29), (30, 31, 32, 33, 34, 35), (36, 37, 38, 39, 40, 41))
     rack = ((0, 0, 0, 0, 0, 0), 
             (2, 2, 1, 2, 0, 0), 
             (1, 2, 1, 0, 0, 0),
             (1, 1, 2, 2, 0, 0), 
             (1, 0, 0, 0, 0, 0), 
-            (2, 1, 1, 1, 2, 0), 
+            (2, 1, 2, 2, 2, 0), 
             (0, 0, 0, 0, 0, 0))
     player = ComputerPlayer(2,2)
     player.printRack(rack)
-    print(player.maxMove(rack, 3, ""))
+    print(player.maxMove(rack, 3))
