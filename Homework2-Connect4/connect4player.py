@@ -1,5 +1,16 @@
 """
 This Connect Four player uses magic to choose a move. wowooOOWOOWOowooWOOWOooOWOo
+(that's what magic sounds like)
+
+okay in all seriousness, this Connect Four player uses minimax to choose a move.
+it is intialized with an ID (whether it is Xs or Os) and a difficulty level, which
+is the number of plies to look ahead. 
+
+it's probably worth mentioning that Alex and I compared our minimaxes, and they 
+came up with the same results, but were one ply off of each other (my difficulty 
+5 was his difficulty 4) and we were also mirrored compared to each other) I mention
+this because Silver told me that this was a problem with her's and that you almost 
+didn't catch it, so hopefully that helps a little :)
 """
 __author__ = "Maddy Stephens"
 __license__ = "MIT"
@@ -7,6 +18,7 @@ __date__ = "February 2025"
 
 import connect4
 
+# these are really not necessary, but I hate magic numbers so
 PLAYER_ONE_VALUE = 1
 PLAYER_TWO_VALUE = 2
 
@@ -19,7 +31,7 @@ PLAYER_TWO_VALUE = 2
 PRUNING = True
 
 class ComputerPlayer:
-    def __init__(self, id, difficulty_level):
+    def __init__(self, id: int, difficulty_level: int):
         """
         Constructor, takes a difficulty level (which indicates the number of 
         plies to look ahead by and a player ID that's  either 1 or 2 that 
@@ -28,9 +40,12 @@ class ComputerPlayer:
         self.id = id
         self.difficulty = difficulty_level
 
-    def pick_move(self, rack):
+    def pick_move(self, rack: tuple) -> int:
         """
-        comment here eventually when time to comment
+        method that is called by connect4.py
+        chooses whether to use base minimax or alpha-beta pruning minimax and 
+        calls their respective recursive functions with appropriate initial
+        arguments
         """
         if PRUNING:
             move, eval = self.calculateAlphaBetaMove(rack, self.difficulty, True, float("-inf"), float("inf"))
@@ -38,7 +53,13 @@ class ComputerPlayer:
             move, eval = self.calculateMove(rack, self.difficulty, True)
         return move
 
-    def calculateMove(self, rack, depth, isMax):
+    def calculateMove(self, rack: tuple, depth: int, isMax: bool) -> tuple:
+        """
+        recursively decides which move is best according to evalutation function.
+        takes a tuple representation of the rack, an integer depth, which is how
+        many more plies to go, and a boolean isMax which indicates if this function
+        should be a Min call or a Max call.
+        """
         move = 1 # initialize move
         # change initial conditions depending on max or min move
         if (isMax):
@@ -68,7 +89,11 @@ class ComputerPlayer:
                     evaluation = boardScore
         return (move, evaluation)
     
-    def calculateAlphaBetaMove(self, rack, depth, isMax, alpha, beta):
+    def calculateAlphaBetaMove(self, rack: tuple, depth: int, isMax: bool, alpha: float, beta: float) -> tuple:
+        """
+        does basically the same thing as calculateMove, but includes an alpha and
+        a beta bound for when to quit according to alpha-beta pruning.
+        """
         move = 1 # initialize move
         # change initial conditions depending on max or min move
         if (isMax):
@@ -91,16 +116,21 @@ class ComputerPlayer:
                     # recusion time yippppeeee!!!!!
                     x, boardScore = self.calculateAlphaBetaMove(hypotheticalBoard, depth-1, (not isMax), alpha, beta)
                     
+                    # change alpha-beta pruning behaviour depending on whether its min or max
                     if isMax:
+                        # update alpha if this move is better
                         if boardScore > alpha:
                             alpha = boardScore
                     
+                        # quit this branch if its already worse than beta
                         if boardScore > beta:
                             return (i, boardScore)
                     else:
+                        # quit this branch if its already better than alpha
                         if boardScore < alpha:
                             return (i, boardScore)
                     
+                        # update beta if this move is worse (better for min)
                         if boardScore > beta:
                             boardScore = beta
                 
@@ -111,10 +141,19 @@ class ComputerPlayer:
                     evaluation = boardScore
         return (move, evaluation)
     
-    def isGameOver(rack):
+    def isGameOver(rack: tuple) -> bool:
+        """
+        checks if the game is over by checking if the evaluation function is +-inf
+        """
         return (ComputerPlayer.evaluation(1, rack) == float("inf") or ComputerPlayer.evaluation(1,rack) == float("-inf"))
 
-    def evaluation(id, rack):
+    def evaluation(id, rack: tuple) -> float:
+        """
+        evaluates a board position by counting number of 1-in-a-rows, 2-in-a-rows, 
+        3-in-a-rows, and (shockingly) 4-in-a-rows evaluating them as worth 1,10,100,
+        or infinity depending on how many and negating them if they are for the the
+        opponent
+        """
         modifier = 1 if id == PLAYER_ONE_VALUE else -1
         score = 0
 
@@ -148,7 +187,11 @@ class ComputerPlayer:
         
         return score
     
-    def scoreQuartet(quartet, modifier):
+    def scoreQuartet(quartet: tuple, modifier: int) -> float:
+        """
+        scores a quartet in the form of a tuple of length 4. modifier indicates
+        whether we are happy for player 1 or happy for player 2.
+        """
         # are both players not in this quartet?
         if not (PLAYER_ONE_VALUE in quartet and PLAYER_TWO_VALUE in quartet):
 
@@ -177,29 +220,3 @@ class ComputerPlayer:
         # row with both players
         else:
             return 0
-
-    def printRack(self,rack):
-        for i in range(len(rack[0])):
-            for j in range(len(rack)):
-                print(rack[j][len(rack[0])-1-i], end=" ")
-            print()
-
-if __name__ == "__main__":
-    # rack = ((1, 1, 0, 0, 0, 0), 
-    #         (0, 0, 0, 0, 0, 0), 
-    #         (0, 0, 0, 0, 0, 0),
-    #         (2, 0, 0, 0, 0, 0), 
-    #         (0, 0, 0, 0, 0, 0), 
-    #         (2, 0, 0, 0, 0, 0), 
-    #         (0, 0, 0, 0, 0, 0))
-    #rack = ((42, -1, -2, -3, -4, -5), (-6, -7, -8, -9, 10, 11), (12, 13, 14, 15, 16, 17), (18, 19, 20, 21, 22, 23), (24, 25, 26, 27, 28, 29), (30, 31, 32, 33, 34, 35), (36, 37, 38, 39, 40, 41))
-    rack = ((0, 0, 0, 0, 0, 0), 
-            (2, 2, 1, 2, 0, 0), 
-            (1, 2, 1, 0, 0, 0),
-            (1, 1, 2, 2, 0, 0), 
-            (1, 0, 0, 0, 0, 0), 
-            (2, 1, 2, 2, 2, 0), 
-            (0, 0, 0, 0, 0, 0))
-    player = ComputerPlayer(2,2)
-    player.printRack(rack)
-    print(player.maxMove(rack, 3))
