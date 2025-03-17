@@ -11,6 +11,15 @@ came up with the same results, but were one ply off of each other (my difficulty
 5 was his difficulty 4) and we were also mirrored compared to each other) I mention
 this because Silver told me that this was a problem with her's and that you almost 
 didn't catch it, so hopefully that helps a little :)
+
+I only managed to get alpha-beta pruning working with about 5 hours to spare before 
+the deadline, but I'm quite proud of it! I'm incredibly impressed with just how much
+faster it is than normal minimax! When it was explained in class, I assumed it would
+be a relatively small optimization, but it took some of the difficulty levels from
+unusable to actually quite reasonable, which I thought was brilliant! I just wanted
+to leave this comment because I thought it was REALLY cool and was really happy I 
+found the time to implement it despite "research proposal hell week" (now it would be
+REALLY funny if it turns out my alpha-beta pruning is completely broken :P)
 """
 __author__ = "Maddy Stephens"
 __license__ = "MIT"
