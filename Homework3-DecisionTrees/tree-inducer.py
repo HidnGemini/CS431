@@ -11,13 +11,26 @@ Are you Stupid?:
 """
 
 class Node:
-    def __init__(self, value, diff, parent, positiveChild, negativeChild, abstainChild, outcomeSymbol):
-        self.value = value
+    def __init__(self, issue: int, diff: int, parent, positiveChild, negativeChild, abstainChild, outcomeSymbol: str):
+        # issue corresponds to which issue is being asked about by this node.
+        # If this is a classification node, value will be -1
+        self.issue = issue
+        # diff tells us how many more democrats there were in this group. It will be 
+        # positive if the majority was democrats and negative if the majority was 
+        # republicans. It will be 0 when there were an equal number of democrats and
+        # republicans
         self.diff = diff
+        # parent points to this node's parent node
         self.parent = parent
+        # positiveChild points to this node's child whose answer to the issue was yae
         self.positiveChild = positiveChild
+        # negativeChild points to this node's child whose answer was nae
         self.negativeChild = negativeChild
+        # abstainChild points to this node's child whose answer was to abstain
         self.abstainChild = abstainChild
+        # outcome symbol is a string used for printing. It will be "" if this is the root,
+        # "+ " if this is a positiveChild, "- " if this is a negativeChild, and ". " if this
+        # is an abstainChild
         self.outcomeSymbol = outcomeSymbol
     def getMajority(self):
         if self.diff == 0:
@@ -27,14 +40,25 @@ class Node:
         else:
             return "R"
     def __str__(self):
-        if self.value == -2:
-            return self.outcomeSymbol + self.getMajority()
-        if self.value >= 0:
+        if self.issue >= 0:
             # question node
-            return f"{self.outcomeSymbol}Issue {chr(self.value+ord('A'))}:"
+            #return f"{self.outcomeSymbol}Issue {chr(self.issue+ord('A'))}:" # convert from issue index to issue name (0->"A", 9->"J")
+            return f"{self.outcomeSymbol}Issue {self.issue}"
         else:
             # classification node
             return self.outcomeSymbol + self.getMajority()
+    def classify(self, rep):
+        print(self)
+        if self.issue == -1:
+            return self.getMajority()
+        else:
+            repVote = rep[2][self.issue]
+            if repVote == "+":
+                return self.positiveChild.classify(rep)
+            elif repVote == "-":
+                return self.negativeChild.classify(rep)
+            elif repVote == ".":
+                return self.abstainChild.classify(rep)
 
 def readData(path: str) -> list:
     repSet = [] 
@@ -69,7 +93,7 @@ def countReps(repSet: list) -> tuple:
 
     for rep in repSet:
         if rep[1] == 'D':
-            numDemocrats -=- 1
+            numDemocrats -=- 1 # great way to increment!
         elif rep[1] == 'R':
             numRepublicans -=- 1
         else:
@@ -142,73 +166,29 @@ def printIIndents(i: int):
         print("     ", end="")
 
 
-def induceTree(trainingSet: list, depth: int, issues: str, outcome: int, parentMajority: str):
-    dems, reps = countReps(trainingSet)
-    if (len(trainingSet) == 0):
-        printIIndents(depth)
-        print(f"{groupOrder[outcome]} ", end="")
-        print(parentMajority)
-        return
-    if dems == 0:
-        printIIndents(depth)
-        print(f"{groupOrder[outcome]} ", end="")
-        print("R")
-        return
-    if reps == 0:
-        printIIndents(depth)
-        print(f"{groupOrder[outcome]} ", end="")
-        print("D")
-        return
-
-    bestIssue = findBestSplit(trainingSet, issues)
-    newGroups = seperateIntoSubGroups(trainingSet, bestIssue)
-
-    if calculateGain(trainingSet, newGroups) == 0:
-        allSame = True
-        record = trainingSet[0][2]
-        for rep in trainingSet:
-            if record != rep[2]:
-                allSame = False
-                break;
-        if allSame:
-            printIIndents(depth)
-            print(f"{groupOrder[outcome]} ", end="")
-            symbol = parentMajority+"**" if reps == dems else "R*" if reps > dems else "D*"
-            print(symbol)
-            return
-
-
-    printIIndents(depth)
-    print(f"{groupOrder[outcome]} ", end="")
-    print(f"Issue {chr(bestIssue+ord('A'))}:")
-    #print(f"Issue {bestIssue}")
-    issues = clipIndexFromString(issues, issues.index(str(bestIssue)))
-    majority = parentMajority if dems == reps else "D" if dems > reps else "R"
-    for i,group in enumerate(newGroups):
-
-
-        # recursive call
-        induceTree(group, depth+1, issues, i, majority)
-
-
-
-def induceExplicitTree(trainingSet: list, depth: int, issues: str, outcome: int, parentNode: Node):
+def induceTree(trainingSet: list, depth: int, issues: str, outcome: int, parentNode: Node):
 
     dems, reps = countReps(trainingSet)
 
+    # diff is used in Nodes to see how many more democrats there were than republicans
     diff = dems - reps
 
     if (len(trainingSet) == 0):
+        # if trainingSet is empty, classify as parent's majority
         return Node(-1, parentNode.diff, parentNode, None, None, None, groupOrder[outcome])
-    if dems == 0:
+    elif dems == 0:
+        # if there are no democrats in trainingSet, classify as republican
         return Node(-1, -1, parentNode, None, None, None, groupOrder[outcome])
-    if reps == 0:
+    elif reps == 0:
+        # if there are no republicans in the trainingSet, classify as democrat
         return Node(-1, 1, parentNode, None, None, None, groupOrder[outcome])
 
+    # find the best issue to split on and the new resepective groups
     bestIssue = findBestSplit(trainingSet, issues)
     newGroups = seperateIntoSubGroups(trainingSet, bestIssue)
 
     if calculateGain(trainingSet, newGroups) == 0:
+        # if the information gain is 0, check if there are any differences in voting records
         allSame = True
         record = trainingSet[0][2]
         for rep in trainingSet:
@@ -216,26 +196,34 @@ def induceExplicitTree(trainingSet: list, depth: int, issues: str, outcome: int,
                 allSame = False
                 break;
         if allSame:
-            return Node(-2, diff, parentNode, None, None, None, groupOrder[outcome])
+            # if there are no differences in voting record, classify as majority
+            return Node(-1, diff, parentNode, None, None, None, groupOrder[outcome])
+        
+    # otherwise, create a new issue node
     thisNode = Node(bestIssue, diff, parentNode, None, None, None, groupOrder[outcome])
 
+    # remove most relevant ussye from issue string
     issues = clipIndexFromString(issues, issues.index(str(bestIssue)))
 
     # recursive calls yippee i love recursion yippee yay
-    thisNode.positiveChild = induceExplicitTree(newGroups[0], depth+1, issues, 0, thisNode)
-    thisNode.negativeChild = induceExplicitTree(newGroups[1], depth+1, issues, 1, thisNode)
-    thisNode.abstainChild = induceExplicitTree(newGroups[2], depth+1, issues, 2, thisNode)
+    thisNode.positiveChild = induceTree(newGroups[0], depth+1, issues, 0, thisNode)
+    thisNode.negativeChild = induceTree(newGroups[1], depth+1, issues, 1, thisNode)
+    thisNode.abstainChild = induceTree(newGroups[2], depth+1, issues, 2, thisNode)
 
     return thisNode
 
 
-def printTree(node, depth):
+def printTree(tree: Node, depth: int):
     printIIndents(depth)
-    print(node)
-    if (node.positiveChild != None):
-        printTree(node.positiveChild, depth+1)
-        printTree(node.negativeChild, depth+1)
-        printTree(node.abstainChild, depth+1)
+    print(tree)
+    if (tree.positiveChild != None): # trees are either leaves or have all the children
+        printTree(tree.positiveChild, depth+1)
+        printTree(tree.negativeChild, depth+1)
+        printTree(tree.abstainChild, depth+1)
+
+
+def testAccuracy(dataSet: list, tree: Node):
+    pass
 
 
 if __name__ == "__main__":
@@ -243,7 +231,10 @@ if __name__ == "__main__":
     groupOrder = ("+ ", "- ", ". ", "")
 
     train, tune = splitIntoTrainingAndTuning(reps)
-    tree = induceExplicitTree(train, 0, "0123456789", 3, None)
+    tree = induceTree(train, 0, "0123456789", 3, None)
     printTree(tree, 0)
+
+    #testRep = ['Rep-1', 'D', '.++++.++++']
+    #print(f"{testRep[0]} is classified as {tree.classify(testRep)}")
 
     
