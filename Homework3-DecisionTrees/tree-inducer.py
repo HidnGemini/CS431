@@ -10,6 +10,32 @@ Are you Stupid?:
     .R
 """
 
+class Node:
+    def __init__(self, value, diff, parent, positiveChild, negativeChild, abstainChild, outcomeSymbol):
+        self.value = value
+        self.diff = diff
+        self.parent = parent
+        self.positiveChild = positiveChild
+        self.negativeChild = negativeChild
+        self.abstainChild = abstainChild
+        self.outcomeSymbol = outcomeSymbol
+    def getMajority(self):
+        if self.diff == 0:
+            return self.parent.getMajority()
+        elif self.diff > 0:
+            return "D"
+        else:
+            return "R"
+    def __str__(self):
+        if self.value == -2:
+            return self.outcomeSymbol + self.getMajority()
+        if self.value >= 0:
+            # question node
+            return f"{self.outcomeSymbol}Issue {chr(self.value+ord('A'))}:"
+        else:
+            # classification node
+            return self.outcomeSymbol + self.getMajority()
+
 def readData(path: str) -> list:
     repSet = [] 
     with open(path, 'r') as file:
@@ -165,25 +191,59 @@ def induceTree(trainingSet: list, depth: int, issues: str, outcome: int, parentM
         induceTree(group, depth+1, issues, i, majority)
 
 
+
+def induceExplicitTree(trainingSet: list, depth: int, issues: str, outcome: int, parentNode: Node):
+
+    dems, reps = countReps(trainingSet)
+
+    diff = dems - reps
+
+    if (len(trainingSet) == 0):
+        return Node(-1, parentNode.diff, parentNode, None, None, None, groupOrder[outcome])
+    if dems == 0:
+        return Node(-1, -1, parentNode, None, None, None, groupOrder[outcome])
+    if reps == 0:
+        return Node(-1, 1, parentNode, None, None, None, groupOrder[outcome])
+
+    bestIssue = findBestSplit(trainingSet, issues)
+    newGroups = seperateIntoSubGroups(trainingSet, bestIssue)
+
+    if calculateGain(trainingSet, newGroups) == 0:
+        allSame = True
+        record = trainingSet[0][2]
+        for rep in trainingSet:
+            if record != rep[2]:
+                allSame = False
+                break;
+        if allSame:
+            return Node(-2, diff, parentNode, None, None, None, groupOrder[outcome])
+    thisNode = Node(bestIssue, diff, parentNode, None, None, None, groupOrder[outcome])
+
+    issues = clipIndexFromString(issues, issues.index(str(bestIssue)))
+
+    # recursive calls yippee i love recursion yippee yay
+    thisNode.positiveChild = induceExplicitTree(newGroups[0], depth+1, issues, 0, thisNode)
+    thisNode.negativeChild = induceExplicitTree(newGroups[1], depth+1, issues, 1, thisNode)
+    thisNode.abstainChild = induceExplicitTree(newGroups[2], depth+1, issues, 2, thisNode)
+
+    return thisNode
+
+
+def printTree(node, depth):
+    printIIndents(depth)
+    print(node)
+    if (node.positiveChild != None):
+        printTree(node.positiveChild, depth+1)
+        printTree(node.negativeChild, depth+1)
+        printTree(node.abstainChild, depth+1)
+
+
 if __name__ == "__main__":
     reps = readData("Homework3-DecisionTrees/voting-data.tsv")
-    groupOrder = ("+", "-", ".", "")
+    groupOrder = ("+ ", "- ", ". ", "")
 
     train, tune = splitIntoTrainingAndTuning(reps)
-
-    # bestIssue = findBestSplit(train, issues)
-    # print(f"Issue {chr(bestIssue+ord('A'))}:")
-    # newGroups = seperateIntoSubGroups(train, bestIssue)
-    # issues = clipIndexFromString(issues, bestIssue)
-    # for i, group in enumerate(newGroups):
-    #     print(f"    {groupOrder[i]} ", end="")
-    #     bestIssue = findBestSplit(group, issues)
-    #     print(f"Issue {chr(bestIssue+ord('A'))}:")
-    induceTree(train, 0, "0123456789", 3, None)
-
-    # string = "0123456789"
-    # print(string)
-    # string = clipIndexFromString(string, 2)
-    # print(string)
+    tree = induceExplicitTree(train, 0, "0123456789", 3, None)
+    printTree(tree, 0)
 
     
