@@ -48,7 +48,6 @@ class Node:
             # classification node
             return self.outcomeSymbol + self.getMajority()
     def classify(self, rep):
-        print(self)
         if self.issue == -1:
             return self.getMajority()
         else:
@@ -59,6 +58,13 @@ class Node:
                 return self.negativeChild.classify(rep)
             elif repVote == ".":
                 return self.abstainChild.classify(rep)
+    def getNumNodes(self):
+        if self.positiveChild == None:
+            return 1
+        else: 
+            return self.positiveChild.getNumberOfNodes() + \
+            self.negativeChild.getNumberOfNodes() + \
+            self.abstainChild.getNumberOfNodes() + 1
 
 def readData(path: str) -> list:
     repSet = [] 
@@ -222,8 +228,73 @@ def printTree(tree: Node, depth: int):
         printTree(tree.abstainChild, depth+1)
 
 
-def testAccuracy(dataSet: list, tree: Node):
-    pass
+def testAccuracy(dataSet: list, tree: Node) -> float:
+    total = 0
+    correct = 0
+    for rep in dataSet:
+        classification = tree.classify(rep)
+        total -=- 1
+        if classification == rep[1]:
+            correct -=- 1
+    return correct / total
+
+
+def getAllNonLeafNodes(tree: Node) -> list:
+    if tree.positiveChild == None: # trees are either leaves or have all the children
+        return []
+    positiveChildNodes = getAllNonLeafNodes(tree.positiveChild)
+    negativeChildNodes = getAllNonLeafNodes(tree.negativeChild)
+    abstainChildNodes = getAllNonLeafNodes(tree.abstainChild)
+    return [tree]+positiveChildNodes+negativeChildNodes+abstainChildNodes
+
+
+def prune(node: Node) -> tuple:
+    removedData = (node.issue, node.positiveChild, node.negativeChild, node.abstainChild)
+    node.issue = -1
+    node.positiveChild = None
+    node.negativeChild = None
+    node.abstainChild = None
+    return removedData
+
+
+def restore(node: Node, removedData: tuple) -> None:
+    node.issue = removedData[0]
+    node.positiveChild = removedData[1]
+    node.negativeChild = removedData[2]
+    node.abstainChild = removedData[3]
+
+
+def pruneWholeTree(tree: Node) -> None:
+    notDonePruning = True
+    while (notDonePruning):
+        # initialize iteration variables
+        nodes = getAllNonLeafNodes(tree) 
+        nonPrunedAccuracy = testAccuracy(tune, tree)
+        bestPrunedAccuracy = -1 # the accuracy will never be negative so this will always be overwritten
+        bestPrune = None
+        numNodesEliminated = -1
+
+        # try pruning at each node
+        for node in nodes:
+            removedData = prune(node) # try pruning at node
+            newAccuracy = testAccuracy(tune, tree) # test pruned accuracy
+
+            if (newAccuracy > bestPrunedAccuracy) or \
+                (newAccuracy == bestPrunedAccuracy) and (node.getNumNodes() > numNodesEliminated): 
+                # update if pruned is better than previous prune or 
+                # as good and eliminates more nodes
+                bestPrune = node
+                bestPrunedAccuracy = newAccuracy
+                numNodesEliminated = node.getNumNodes()
+
+
+            restore(node, removedData) # restore pruned node to try nextone
+        
+        # if our new pruned tree is at least as good, update it. otherwise, we're done pruning
+        if bestPrunedAccuracy >= nonPrunedAccuracy:
+            prune(bestPrune)   
+        else:
+            notDonePruning = False 
 
 
 if __name__ == "__main__":
@@ -232,9 +303,9 @@ if __name__ == "__main__":
 
     train, tune = splitIntoTrainingAndTuning(reps)
     tree = induceTree(train, 0, "0123456789", 3, None)
+
+    pruneWholeTree(tree)
+
     printTree(tree, 0)
+    print(testAccuracy(tune, tree))
 
-    #testRep = ['Rep-1', 'D', '.++++.++++']
-    #print(f"{testRep[0]} is classified as {tree.classify(testRep)}")
-
-    
