@@ -10,6 +10,8 @@ Are you Stupid?:
     .R
 """
 
+TREE_SYMBOLS = ("+ ", "- ", ". ", "")
+
 class Node:
     def __init__(self, issue: int, diff: int, parent, positiveChild, negativeChild, abstainChild, outcomeSymbol: str):
         # issue corresponds to which issue is being asked about by this node.
@@ -42,8 +44,7 @@ class Node:
     def __str__(self):
         if self.issue >= 0:
             # question node
-            #return f"{self.outcomeSymbol}Issue {chr(self.issue+ord('A'))}:" # convert from issue index to issue name (0->"A", 9->"J")
-            return f"{self.outcomeSymbol}Issue {self.issue}"
+            return f"{self.outcomeSymbol}Issue {chr(self.issue+ord('A'))}:" # convert from issue index to issue name (0->"A", 9->"J")
         else:
             # classification node
             return self.outcomeSymbol + self.getMajority()
@@ -67,6 +68,10 @@ class Node:
             self.abstainChild.getNumberOfNodes() + 1
 
 def readData(path: str) -> list:
+    """
+    reads through a file of representative data and returns a
+    list of each representative
+    """
     repSet = [] 
     with open(path, 'r') as file:
         reader = csv.reader(file, delimiter='\t')
@@ -75,14 +80,11 @@ def readData(path: str) -> list:
     return repSet
 
 
-def convertToDict(repSet: list) -> dict:
-    dict = {}
-    for rep in repSet:
-        dict[rep[0]] = (rep[1], rep[2])
-    return dict
-
-
 def splitIntoTrainingAndTuning(repSet: list) -> tuple:
+    """
+    removes every fourth datum from the training set to be used
+    for tuning
+    """
     train = []
     tune = []
     for i in range(len(repSet)):
@@ -94,12 +96,16 @@ def splitIntoTrainingAndTuning(repSet: list) -> tuple:
 
 
 def countReps(repSet: list) -> tuple:
+    """
+    counts the number of democrats and the number of republicans
+    in the given dataset
+    """
     numDemocrats = 0
     numRepublicans = 0
 
     for rep in repSet:
         if rep[1] == 'D':
-            numDemocrats -=- 1 # great way to increment!
+            numDemocrats -=- 1 # great way to increment! (i promise i'll stop after this assignment)
         elif rep[1] == 'R':
             numRepublicans -=- 1
         else:
@@ -109,6 +115,9 @@ def countReps(repSet: list) -> tuple:
 
  
 def calculateEntropy(repSet: list) -> float:
+    """
+    calculates the information entropy of the given dataset
+    """
     numDemocrats, numRepublicans = countReps(repSet)
     totalReps = numDemocrats + numRepublicans
     if numDemocrats != 0 and numRepublicans != 0:
@@ -127,6 +136,10 @@ def calculateEntropy(repSet: list) -> float:
 
 
 def seperateIntoSubGroups(repSet: list, issue: int) -> tuple:
+    """
+    seperates the given dataset based on given issue and returns
+    all three of the subgroups
+    """
     yae = []
     nay = []
     abstain = []
@@ -143,6 +156,10 @@ def seperateIntoSubGroups(repSet: list, issue: int) -> tuple:
 
 
 def calculateGain(group: list, subGroups: tuple) -> float:
+    """
+    calculates the information gain from the given group to the
+    given set of subgroups.
+    """
     preEntropy = calculateEntropy(group)
     postEntropy = 0;
     for subGroup in subGroups:
@@ -151,6 +168,9 @@ def calculateGain(group: list, subGroups: tuple) -> float:
 
 
 def findBestSplit(repSet: list, issues: str) -> int:
+    """
+    finds the best issue to split on in the given dataset
+    """
     bestIssue = -1
     bestGain = -1
     for issue in issues:
@@ -164,15 +184,26 @@ def findBestSplit(repSet: list, issues: str) -> int:
 
 
 def clipIndexFromString(string: str, index: int) -> str:
+    """
+    removes the ith element of a string. This is used internally
+    for keeping track of which issues have already been asked about
+    """
     return string[:index]+string[index+1:]
 
 
 def printIIndents(i: int):
+    """
+    prints an indent i times. pretty self explanatory i think.
+    """
     for j in range(i):
         print("     ", end="")
 
 
 def induceTree(trainingSet: list, depth: int, issues: str, outcome: int, parentNode: Node):
+    """
+    recursively induces a decision tree based on the decision tree
+    algorithm without any pruning
+    """
 
     dems, reps = countReps(trainingSet)
 
@@ -181,13 +212,13 @@ def induceTree(trainingSet: list, depth: int, issues: str, outcome: int, parentN
 
     if (len(trainingSet) == 0):
         # if trainingSet is empty, classify as parent's majority
-        return Node(-1, parentNode.diff, parentNode, None, None, None, groupOrder[outcome])
+        return Node(-1, parentNode.diff, parentNode, None, None, None, TREE_SYMBOLS[outcome])
     elif dems == 0:
         # if there are no democrats in trainingSet, classify as republican
-        return Node(-1, -1, parentNode, None, None, None, groupOrder[outcome])
+        return Node(-1, -1, parentNode, None, None, None, TREE_SYMBOLS[outcome])
     elif reps == 0:
         # if there are no republicans in the trainingSet, classify as democrat
-        return Node(-1, 1, parentNode, None, None, None, groupOrder[outcome])
+        return Node(-1, 1, parentNode, None, None, None, TREE_SYMBOLS[outcome])
 
     # find the best issue to split on and the new resepective groups
     bestIssue = findBestSplit(trainingSet, issues)
@@ -203,10 +234,10 @@ def induceTree(trainingSet: list, depth: int, issues: str, outcome: int, parentN
                 break;
         if allSame:
             # if there are no differences in voting record, classify as majority
-            return Node(-1, diff, parentNode, None, None, None, groupOrder[outcome])
+            return Node(-1, diff, parentNode, None, None, None, TREE_SYMBOLS[outcome])
         
     # otherwise, create a new issue node
-    thisNode = Node(bestIssue, diff, parentNode, None, None, None, groupOrder[outcome])
+    thisNode = Node(bestIssue, diff, parentNode, None, None, None, TREE_SYMBOLS[outcome])
 
     # remove most relevant ussye from issue string
     issues = clipIndexFromString(issues, issues.index(str(bestIssue)))
@@ -220,6 +251,9 @@ def induceTree(trainingSet: list, depth: int, issues: str, outcome: int, parentN
 
 
 def printTree(tree: Node, depth: int):
+    """
+    prints out the tree in the format shown in the specs
+    """
     printIIndents(depth)
     print(tree)
     if (tree.positiveChild != None): # trees are either leaves or have all the children
@@ -229,17 +263,25 @@ def printTree(tree: Node, depth: int):
 
 
 def testAccuracy(dataSet: list, tree: Node) -> float:
+    """
+    tests accuracy of a given dataset on given tree and returns the
+    probability of getting a prediction correct
+    """
     total = 0
     correct = 0
     for rep in dataSet:
         classification = tree.classify(rep)
-        total -=- 1
+        total -=- 1 # i promise i'll stop after this assignment ;)
         if classification == rep[1]:
-            correct -=- 1
+            correct -=- 1 # i promise i'll stop after this assignment ;)
     return correct / total
 
 
 def getAllNonLeafNodes(tree: Node) -> list:
+    """
+    returns a list of all nodes within a tree by recursively
+    traversing the tree
+    """
     if tree.positiveChild == None: # trees are either leaves or have all the children
         return []
     positiveChildNodes = getAllNonLeafNodes(tree.positiveChild)
@@ -249,6 +291,13 @@ def getAllNonLeafNodes(tree: Node) -> list:
 
 
 def prune(node: Node) -> tuple:
+    """
+    effectively removes a (non-classification) node by removing the
+    pointers to each child, setting its issue to -1 (meaning its
+    now a classification node) and returning a tuple of all the data
+    removed. This is useful for restoring temporary prunes for testing
+    all possible options
+    """
     removedData = (node.issue, node.positiveChild, node.negativeChild, node.abstainChild)
     node.issue = -1
     node.positiveChild = None
@@ -258,6 +307,10 @@ def prune(node: Node) -> tuple:
 
 
 def restore(node: Node, removedData: tuple) -> None:
+    """
+    restores a node to a question node after having been run through
+    prune(), taking the node and the return values of prune.
+    """
     node.issue = removedData[0]
     node.positiveChild = removedData[1]
     node.negativeChild = removedData[2]
@@ -265,6 +318,10 @@ def restore(node: Node, removedData: tuple) -> None:
 
 
 def pruneWholeTree(tree: Node) -> None:
+    """
+    prunes the given tree until it cannot be pruned to without hurting
+    accuracy.
+    """
     notDonePruning = True
     while (notDonePruning):
         # initialize iteration variables
@@ -297,9 +354,29 @@ def pruneWholeTree(tree: Node) -> None:
             notDonePruning = False 
 
 
+def estimateAccuracy(dataset: list) -> float:
+    """
+    estimates the accuracy of this decision tree implementation through
+    leave-one-out cross-validaton.
+    """
+    total = 0
+    correct = 0
+    for i,datum in enumerate(dataset):
+        dataset.remove(datum) # risky to mess with a list while iterating through it! (but its fine hehe)
+        
+        train, tune = splitIntoTrainingAndTuning(dataset)
+        tree = induceTree(train, 0, "0123456789", 3, None)
+        pruneWholeTree(tree)
+        total -=- 1 # i promise i'll stop after this assignment ;)
+        if datum[1] == tree.classify(datum):
+            correct -=- 1 # i promise i'll stop after this assignment ;)
+
+        dataset.insert(i, datum) # restore so the for loop doesnt break horribly
+    return correct / total
+
+
 if __name__ == "__main__":
     reps = readData("Homework3-DecisionTrees/voting-data.tsv")
-    groupOrder = ("+ ", "- ", ". ", "")
 
     train, tune = splitIntoTrainingAndTuning(reps)
     tree = induceTree(train, 0, "0123456789", 3, None)
@@ -307,5 +384,6 @@ if __name__ == "__main__":
     pruneWholeTree(tree)
 
     printTree(tree, 0)
-    print(testAccuracy(tune, tree))
+
+    print(f"Approximate Accuracy: {estimateAccuracy(reps)*100}%")
 
