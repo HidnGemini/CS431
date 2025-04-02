@@ -1,5 +1,6 @@
 import csv
 import math
+import sys
 
 
 """
@@ -36,20 +37,17 @@ class Node:
         self.outcomeSymbol = outcomeSymbol
     def getMajority(self):
         if self.diff == 0:
-            return self.parent.getMajority()
+            if (self.parent != None):
+                return self.parent.getMajority()
+            else:
+                print("WARN: A branch has no data and therefore cannot get a majority.")
+                return "?"
         elif self.diff > 0:
             return "D"
         else:
             return "R"
-    def __str__(self):
-        if self.issue >= 0:
-            # question node
-            return f"{self.outcomeSymbol}Issue {chr(self.issue+ord('A'))}:" # convert from issue index to issue name (0->"A", 9->"J")
-        else:
-            # classification node
-            return self.outcomeSymbol + self.getMajority()
     def classify(self, rep):
-        if self.issue == -1:
+        if (self.issue == -1):
             return self.getMajority()
         else:
             repVote = rep[2][self.issue]
@@ -66,6 +64,13 @@ class Node:
             return self.positiveChild.getNumberOfNodes() + \
             self.negativeChild.getNumberOfNodes() + \
             self.abstainChild.getNumberOfNodes() + 1
+    def __str__(self): 
+        if self.issue >= 0:
+            # question node
+            return f"{self.outcomeSymbol}Issue {chr(self.issue+ord('A'))}:" # convert from issue index to issue name (0->"A", 9->"J")
+        else:
+            # classification node
+            return self.outcomeSymbol + self.getMajority()
 
 def readData(path: str) -> list:
     """
@@ -376,7 +381,8 @@ def estimateAccuracy(dataset: list) -> float:
 
 
 if __name__ == "__main__":
-    reps = readData("Homework3-DecisionTrees/voting-data.tsv")
+    args = sys.argv
+    reps = readData(args[1])
 
     train, tune = splitIntoTrainingAndTuning(reps)
     tree = induceTree(train, 0, "0123456789", 3, None)
