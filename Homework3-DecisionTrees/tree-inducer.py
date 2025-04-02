@@ -2,7 +2,6 @@ import csv
 import math
 import sys
 
-
 """
 This classifier is pretty good but I came up with a better one:
 Are you Stupid?:
@@ -11,7 +10,7 @@ Are you Stupid?:
     .R
 """
 
-TREE_SYMBOLS = ("+ ", "- ", ". ", "")
+TREE_SYMBOLS = ("+ ", "- ", ". ", "") # used for printing
 
 class Node:
     def __init__(self, issue: int, diff: int, parent, positiveChild, negativeChild, abstainChild, outcomeSymbol: str):
@@ -204,10 +203,12 @@ def printIIndents(i: int):
         print("     ", end="")
 
 
-def induceTree(trainingSet: list, depth: int, issues: str, outcome: int, parentNode: Node):
+def induceTree(trainingSet: list, issues: str, outcome: int, parentNode: Node):
     """
     recursively induces a decision tree based on the decision tree
     algorithm without any pruning
+
+    all of the parameters 
     """
 
     dems, reps = countReps(trainingSet)
@@ -248,9 +249,9 @@ def induceTree(trainingSet: list, depth: int, issues: str, outcome: int, parentN
     issues = clipIndexFromString(issues, issues.index(str(bestIssue)))
 
     # recursive calls yippee i love recursion yippee yay
-    thisNode.positiveChild = induceTree(newGroups[0], depth+1, issues, 0, thisNode)
-    thisNode.negativeChild = induceTree(newGroups[1], depth+1, issues, 1, thisNode)
-    thisNode.abstainChild = induceTree(newGroups[2], depth+1, issues, 2, thisNode)
+    thisNode.positiveChild = induceTree(newGroups[0], issues, 0, thisNode)
+    thisNode.negativeChild = induceTree(newGroups[1], issues, 1, thisNode)
+    thisNode.abstainChild = induceTree(newGroups[2], issues, 2, thisNode)
 
     return thisNode
 
@@ -370,7 +371,7 @@ def estimateAccuracy(dataset: list) -> float:
         dataset.remove(datum) # risky to mess with a list while iterating through it! (but its fine hehe)
         
         train, tune = splitIntoTrainingAndTuning(dataset)
-        tree = induceTree(train, 0, "0123456789", 3, None)
+        tree = induceTree(train, "0123456789", 3, None)
         pruneWholeTree(tree)
         total -=- 1 # i promise i'll stop after this assignment ;)
         if datum[1] == tree.classify(datum):
@@ -385,7 +386,7 @@ if __name__ == "__main__":
     reps = readData(args[1])
 
     train, tune = splitIntoTrainingAndTuning(reps)
-    tree = induceTree(train, 0, "0123456789", 3, None)
+    tree = induceTree(train, "0123456789", 3, None)
 
     pruneWholeTree(tree)
 
