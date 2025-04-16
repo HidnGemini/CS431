@@ -64,7 +64,7 @@ class HumanPlayer:
 ################################################################################
 
 # Does tkinter even exist on this computer? If not, don't do graphics.
-do_graphics = False
+do_graphics = True
 try:
     import tkinter as tk
 except ImportError:
