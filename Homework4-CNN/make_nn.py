@@ -7,14 +7,18 @@ import random as rng
 # variables that cannot be tinkered with
 NUM_CLASSES = 2
 IMG_SIZE = (100,100)
-NUM_EPOCHS = 1
+NUM_EPOCHS = 100
 
 # variables that can be tinkered with
 VALIDATION_SPLIT = 0.2
 BATCH_SIZE = 32
 
 def __createDataSets(dir: str):
-    # load directory
+    """
+    takes a directory of images and converts them into tensors. It then
+    splits them randomly into a training set and a validation set and
+    returns a tuple containing the two.
+    """
     data_dir = pathlib.Path(dir).with_suffix('')
 
     # errors
@@ -58,6 +62,12 @@ def __createDataSets(dir: str):
     return (training_set, validation_set)
 
 def train(dataset: tuple):
+    """
+    takes a tuple of datasets (a training set and a validation set)
+    and trains a model based on that data. The model is defined inside
+    the train method.
+    """
+
     # this was my best architecture; i found it relatively early and spent many
     # long hours trying to beat it, but nothing did quite as well on my test set
     model = tf.keras.Sequential([
@@ -93,9 +103,19 @@ def train(dataset: tuple):
     return model
 
 if __name__ == "__main__":
+    # check arg count
     if (len(sys.argv) != 3):
-        print("INVALID USAGE; python make_nn.py <training directory> <model name to save>")
+        print("INVALID USAGE; python make_nn.py <training directory> <name of model to save>")
         sys.exit(9)
+
+    # get datasets
     datasets = __createDataSets(sys.argv[1])
+
+    # train model 
     model = train(datasets)
+
+    # add softmax to normalize outputs
+    model.add(tf.keras.layers.Softmax()) 
+
+    # save model
     model.save(sys.argv[2], include_optimizer = False)
