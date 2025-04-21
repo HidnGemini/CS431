@@ -208,7 +208,8 @@ def induceTree(trainingSet: list, issues: str, outcome: int, parentNode: Node):
     recursively induces a decision tree based on the decision tree
     algorithm without any pruning
 
-    all of the parameters 
+    all of the parameters are self explanatory except issues and outcome.
+    issues is a string of indices that have not 
     """
 
     dems, reps = countReps(trainingSet)

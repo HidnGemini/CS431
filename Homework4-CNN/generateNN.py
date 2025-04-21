@@ -1,8 +1,6 @@
 import tensorflow as tf
 import os
 import numpy as np
-import PIL
-import PIL.Image
 import pathlib
 import matplotlib.pyplot as plt
 import random as rng
@@ -18,7 +16,7 @@ def showSampleImages(dataset):
     plt.show()
 
 if __name__ == "__main__":
-    DATASET_PATH = "D:/GitHub/CS431/Homework4-CNN/cats-and-dogs"
+    DATASET_PATH = "/Users/gem/Documents/GitHub/CS431/Homework4-CNN/cats-and-dogs"
 
     data_dir = pathlib.Path(DATASET_PATH).with_suffix('')
     print(f"dogs: {len(list(data_dir.glob('d*.jpg')))} cats: {len(list(data_dir.glob('c*.jpg')))}")
@@ -31,7 +29,7 @@ if __name__ == "__main__":
 
     train_ds = tf.keras.utils.image_dataset_from_directory(
         data_dir,
-        validation_split=0.2,
+        validation_split=0.04,
         labels=[0 for i in range(len(list(data_dir.glob('c*.jpg'))))] + [1 for i in range(len(list(data_dir.glob('d*.jpg'))))], # jank
         subset="training",
         seed=seed,
@@ -40,7 +38,7 @@ if __name__ == "__main__":
     
     val_ds = tf.keras.utils.image_dataset_from_directory(
         data_dir,
-        validation_split=0.2,
+        validation_split=0.04,
         labels=[0 for i in range(len(list(data_dir.glob('c*.jpg'))))] + [1 for i in range(len(list(data_dir.glob('d*.jpg'))))], # jank
         subset="validation",
         seed=seed,
@@ -60,16 +58,34 @@ if __name__ == "__main__":
 
     num_classes = 5
 
-    model = tf.keras.Sequential([
+    best = tf.keras.Sequential([
         tf.keras.layers.Rescaling(1./255),
-        tf.keras.layers.Conv2D(32, 3, activation='relu'),
+        tf.keras.layers.Conv2D(32, 3, 2, activation='leaky_relu'),
         tf.keras.layers.MaxPooling2D(),
-        tf.keras.layers.Conv2D(32, 3, activation='relu'),
+        tf.keras.layers.Conv2D(32, 3, activation='leaky_relu'),
         tf.keras.layers.MaxPooling2D(),
-        tf.keras.layers.Conv2D(32, 3, activation='relu'),
+        tf.keras.layers.Conv2D(32, 3, activation='leaky_relu'),
         tf.keras.layers.MaxPooling2D(),
         tf.keras.layers.Flatten(),
-        tf.keras.layers.Dense(128, activation='relu'),
+        tf.keras.layers.Dense(128, activation='leaky_relu'),
+        tf.keras.layers.Dense(num_classes)
+        ])
+
+    model = tf.keras.Sequential([
+        tf.keras.layers.Rescaling(1./255),
+        tf.keras.layers.Conv2D(32, 3, activation='leaky_relu'),
+        tf.keras.layers.MaxPooling2D(),
+        tf.keras.layers.Conv2D(32, 3, 2, activation='leaky_relu'),
+        tf.keras.layers.SpatialDropout2D(0.5),
+        tf.keras.layers.MaxPooling2D(),
+        tf.keras.layers.Conv2D(32, 3, activation='leaky_relu'),
+        tf.keras.layers.MaxPooling2D(),
+        tf.keras.layers.Flatten(),
+        tf.keras.layers.Dropout(0.5),
+        tf.keras.layers.Dense(128, activation='leaky_relu'),
+        tf.keras.layers.Dropout(0.5),
+        tf.keras.layers.Dense(32, activation='leaky_relu'),
+        tf.keras.layers.Dropout(0.5),
         tf.keras.layers.Dense(num_classes)
         ])
 
