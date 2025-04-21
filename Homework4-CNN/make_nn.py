@@ -7,7 +7,7 @@ import random as rng
 # variables that cannot be tinkered with
 NUM_CLASSES = 2
 IMG_SIZE = (100,100)
-NUM_EPOCHS = 100
+NUM_EPOCHS = 1
 
 # variables that can be tinkered with
 VALIDATION_SPLIT = 0.2
@@ -25,18 +25,17 @@ def __createDataSets(dir: str):
         print("ERROR: No files found in directory")
         sys.exit(9)
 
-    # create labels; since training data is read in ascii order, all cat data 
-    # will be read first, then all dog data. basically, we have 0 label (cats)
-    # however many many times a "c*.jpg" file shows up in that directory.
-    # of note: this breaks if any images are not either c* or d*.
-    labels = [0 for i in range(len(list(data_dir.glob('c*.jpg'))))] + [1 for i in range(len(list(data_dir.glob('d*.jpg'))))]
     rng_seed = rng.randint(1,1000)
 
     # create training set
     training_set = tf.keras.utils.image_dataset_from_directory(
         data_dir,
         validation_split=VALIDATION_SPLIT,
-        labels=labels,
+        # create labels; since training data is read in ascii order, all cat data 
+        # will be read first, then all dog data. basically, we have 0 label (cats)
+        # however many many times a "c*.jpg" file shows up in that directory.
+        # of note: this breaks if any images are not either c* or d*.
+        labels=[0 for i in range(len(list(data_dir.glob('c*.jpg'))))] + [1 for i in range(len(list(data_dir.glob('d*.jpg'))))],
         subset="training",
         seed=rng_seed,
         image_size=IMG_SIZE,
@@ -46,7 +45,7 @@ def __createDataSets(dir: str):
     validation_set = tf.keras.utils.image_dataset_from_directory(
         data_dir,
         validation_split=VALIDATION_SPLIT,
-        labels=labels,
+        labels=[0 for i in range(len(list(data_dir.glob('c*.jpg'))))] + [1 for i in range(len(list(data_dir.glob('d*.jpg'))))],
         subset="validation",
         seed=rng_seed,
         image_size=IMG_SIZE,
